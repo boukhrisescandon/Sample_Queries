@@ -89,3 +89,40 @@ select email from employee group by email having count(id)>=2;
 ```
 
 
+## Find departments with less than 5 employees
+
+Find departments with less than 5 employees. 
+
+```sql
+
+select department, count(worker_id) as num_of_workers from worker group by department having count(worker_id)<5;
+
+```
+
+
+## Time from the 10th Runner
+
+In a marathon, time is counted from the moment of the formal start of the race while net time is counted from the moment a runner crosses a starting line. How much net time separates Chris Doe from the 10th best net time (in ascending order)? Avoid gaps in ranking calculations.
+
+```sql
+
+with cte1 as 
+(select net_time from marathon_male where person_name = 'Chris Doe'),
+cte2 as
+(select * from (select net_time, dense_rank() over (order by net_time) as d_rank from marathon_male) a where d_rank=10)
+select distinct abs(cte1.net_time - cte2.net_time) from cte1, cte2;
+
+```
+
+
+## Responsible for Most Customers
+
+Write a query to get the Employees who are responsible for the maximum number of Customers.
+
+```sql
+
+select e.empl_id, count(c.cust_id) as n_customers from map_employee_territory as e inner join map_customer_territory as c on e.territory_id = c.territory_id group by e.empl_id order by count(c.cust_id) desc limit 4;
+
+```
+
+
