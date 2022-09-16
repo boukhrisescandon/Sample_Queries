@@ -46,6 +46,27 @@ group by acquired_quarter order by cnt_acq desc;
 
 Write a query to find which gender gives a higher average review score when writing reviews as guests.
 
+```python
+
+import pandas as pd
+reviews = airbnb_reviews[airbnb_reviews['from_type']=='guest']
+reviews = reviews[['from_user', 'review_score']]
+reviews.columns = ['guest_id', 'review_score']
+reviews.head()
+
+guests = reviews.merge(airbnb_guests, on = 'guest_id')
+
+guests = guests[['gender', 'review_score']]
+
+ans = guests.groupby(by = 'gender', as_index = False).mean()
+ans.head()
+
+ans = ans[ans['review_score'] == ans['review_score'].max()]
+ans.head()
+
+
+```
+
 ```sql
 
 select guest.gender, avg(review.review_score) from airbnb_reviews as review inner join airbnb_guests as guest on review.from_user = guest.guest_id where review.from_type = 'guest' group by guest.gender limit 1;
@@ -56,6 +77,15 @@ select guest.gender, avg(review.review_score) from airbnb_reviews as review inne
 ## Records with '?'
 
 Find records with the value '?' in the stars column.
+
+```python
+
+import pandas as pd
+
+yelp_reviews = yelp_reviews[yelp_reviews['stars'] == '?']
+yelp_reviews.head()
+
+```
 
 ```sql
 
@@ -78,6 +108,23 @@ select count(total_renewals) from library_usage where total_renewals between 1 a
 ## Duplicate Emails
 
 Find all emails with duplicates
+
+```python
+
+import pandas as pd
+
+emails = employee[['emails']]
+emails['counter'] = 1
+emails.head()
+
+counts = emails.groupby(by = ['email'], as_index=False).count()
+counts.head()
+
+ans = counts[counts['counter'] > 1]
+ans = ans[['email']]
+ans.head()
+
+```
 
 ```sql
 
@@ -234,3 +281,132 @@ ans.sort_values(by = 'n_beds_avg', ascending=False)
 select neighbourhood, avg(beds) as n_beds_avg from airbnb_search_details group by neighbourhood having sum(beds)>=3 order by n_beds_avg desc;
 
 ```
+
+
+## Most Profitable Companies 
+
+Find the three most profitable companies in the entire world.
+
+```sql
+
+select company, profits from forbes_global_2010_2014 order by profits desc limit 3;
+
+```
+
+
+## Total AdWords Earnings
+
+Find the total AdWords earnings for each business type. 
+
+```python
+
+import pandas as pd
+
+buz = google_adwords_earnings[['business_type', 'adwords_earnings']]
+buz_avg = buz.groupby(by = ['business_type'], as_index=False).sum()
+buz_avg.head()
+
+```
+
+
+## Find details of workers excluding those with the first name 'Vipul' or 'Satish'
+
+Find details of workers excluding those with the first name 'Vipul' or 'Satish'.
+
+```python
+
+import pandas as pd
+
+ans = worker[(worker['first_name'] != 'Vipul')]
+ans = ans[(ans['first_name'] != 'Satish')]
+ans
+
+```
+
+## Number of Shipments per Month
+
+Write a query that will calculate the number of shipments per month.
+
+```python
+
+import pandas as pd
+import datetime as dt
+
+orders = amazon_shipment[['shipment_date']]
+orders['counter'] = 1
+orders['year_month'] = orders['shipment_date'].dt.strftime('%Y-%m')
+orders.head()
+
+orders = orders[['year_month', 'counter']]
+
+agg = orders.groupby(by='year_month', as_index=False).count()
+agg.head()
+
+```
+
+```sql
+
+select to_char(shipment_date, 'YYYY-MM') as date, count(shipment_id) as cnt from amazon_shipment group by to_char(shipment_date, 'YYYY-MM');
+
+```
+
+
+## Customer Average Orders
+
+How many customers placed an order and what is the average order amount?
+
+```python
+
+import pandas as pd
+import numpy as np
+
+avg = postmates_orders['amount'].mean()
+avg
+
+cnt = postmates_orders['customer_id'].unique().shape[0]
+cnt
+
+result = postmates_orders.agg({'customer_id':'nunique', 'amount':'mean'}).reset_index()
+result
+
+```
+
+```sql
+
+select (select count(distinct customer_id) as count from postmates_orders), (select avg(amount) as avg from postmates_orders) from postmates_orders limit 1;
+
+```
+
+
+## User Scroll up Events
+
+Find all users who have performed at least one scroll_up event.
+
+```python
+
+import pandas as pd
+
+users = facebook_web_log[facebook_web_log['action'] == 'scroll_up']
+users.head()
+
+ans = pd.DataFrame(users['user_id'].unique())
+ans.columsn = ['user_id']
+
+ans.head()
+
+```
+
+```sql
+
+select distinct(user_id) from facebook_web_log where action = 'scroll_up';
+
+```
+
+
+
+
+
+
+
+
+
