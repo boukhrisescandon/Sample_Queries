@@ -8,6 +8,16 @@
 
 Find the last time each bike was in use.
 
+```python
+
+import pandas as pd
+
+ans = dc_bikeshare_q1_2012.groupby(by='bike_number', as_index=False)['end_time'].max()
+ans = ans.sort_values(by='end_time', ascending=False)
+ans
+
+```
+
 ```sql
 
 select bike_number, max(end_time) as last_used from dc_bikeshare_q1_2012
@@ -403,10 +413,398 @@ select distinct(user_id) from facebook_web_log where action = 'scroll_up';
 ```
 
 
+## Paid Users in April 2020
+
+How many paid users had any calls in April 2020?
+
+```python
+
+import pandas as pd
+import datetime as dt
+
+merge = rc_calls.merge(rc_users, on='user_id')
+merge.head()
+
+free = merge[merge['status']=='free']
+free['year-month'] = free['date'].dt.strftime('%Y-%m')
+
+ans = free[free['year-month'] == '2020-04']
+
+ans.shape[1]
+
+```
+
+```sql
+
+select count(distinct calls.user_id) as count from rc_calls as calls inner join rc_users as users on calls.user_id = users.user_id where users.status='free' and to_char(calls.date, 'YYYY-MM') = '2020-04';
+
+```
 
 
+## Users with Two Statuses
+
+Find users who are both a viewer and streamer.
+
+```python
+
+import pandas as pd
+
+streamers = twitch_sessions[twitch_sessions['session_type'] == 'streamer']
+viewers = twitch_sessions[twitch_sessions['session_type'] == 'viewer']
+
+merge = streamers.merge(viewers, on='user_id')
+ans = merge['user_id'].unique()
+ans
+
+```
+
+```sql
+
+with viewer as
+(select user_id from twitch_sessions where session_type='viewer'),
+streamer as
+(select user_id from twitch_sessions where session_type='streamer')
+select distinct(viewer.user_id) from viewer inner join streamer on viewer.user_id = streamer.user_id;
+
+```
 
 
+## Homework Results
 
+Given the homework results of a group of students, calculate the average grade and the completion rate of each student.
+
+```python
+
+# Import your libraries
+import pandas as pd
+import numpy as np
+
+# Start writing code
+allstate_homework.head()
+
+allstate_homework['complete'] = np.where(allstate_homework['grade']>0, 1, 0)
+allstate_homework.head()
+
+avg_grade = allstate_homework.groupby(by='student_id', as_index=False).mean()
+avg_grade['complete'] = avg_grade['complete']*100
+
+merged = avg_grade.merge(allstate_students, on='student_id')
+merged.head()
+
+ans = merged[['student_firstname', 'grade', 'complete']]
+ans.head()
+
+ans.columns = ['student_firstname', 'avg_grade', 'completion_rate']
+ans.head()
+
+```
+
+```sql
+
+-- here we get the average grade
+select student.student_firstname, avg(homework.grade) over (partition by homework.student_id) as avg_grade from allstate_students as student inner join allstate_homework as homework on student.student_id = homework.student_id;
+
+-- indication that the homework was completed
+with cte1 as
+(select student_id, 
+case when grade>0 then 1
+else 0
+end as complete from allstate_homework),
+cte2 as
+(select student.student_id, student.student_firstname, avg(homework.grade) over (partition by homework.student_id) as avg_grade from allstate_students as student inner join allstate_homework as homework on student.student_id = homework.student_id)
+select distinct cte2.student_firstname, cte2.avg_grade, (avg(cte1.complete) over (partition by cte1.student_id))*100 as completion_rate from allstate_homework as homework inner join cte1 on homework.student_id = cte1.student_id inner join cte2 on cte2.student_id = homework.student_id;
+
+-- average completion rate
+--select student_id, avg(select student_id, case when grade>0 then 1 else 0 end as complete from allstate_homework) over (partition by student_id) as completion_rate from allstate_homework;
+
+```
+
+
+## Count the number of user events performed by MacBook Pro Users
+
+Count the number of user events performed by MacBook Pro users.
+
+```python
+
+import pandas as pd
+
+mac = playbook_events[playbook_events['device']=='macbook pro']
+mac.head()
+
+ans = mac.groupby(by='event_name', as_index=False).count()
+ans.head()
+
+ans = ans[['event_name', 'user_id']]
+ans.column = ['event_name', 'event_count']
+ans
+
+```
+
+```sql
+
+select event_name, count(*) from playbook_events where device='macbook pro' group by event_name ;
+
+```
+
+
+## Department Salaries
+
+Find the number of male and female employees per department and also their corresponding total salaries.
+
+```python
+
+import pandas as pd
+
+females = employee[employee['sex']=='F'].groupby(by='department', as_index=False)['id'].count()
+females.columns = ['department', 'females']
+females
+
+males = employee[employee['sex']=='M'].groupby(by='department', as_index=False)['id'].count()
+males.columns = ['department', 'males']
+males
+
+fem_sal = employee[employee['sex']=='F'].groupby(by='department', as_index=False)['salary'].sum()
+fem_sal.columns = ['department', 'fem_sal']
+fem_sal
+
+mal_sal = employee[employee['sex']=='M'].groupby(by='department', as_index=False)['salary'].sum()
+mal_sal.columns = ['department', 'mal_sal']
+mal_sal
+
+ans = females.merge(males, on='department')
+ans = ans.merge(fem_sal, on='department')
+ans = ans.merge(mal_sal, on='department')
+
+```
+
+```sql
+
+select * from employee;
+
+-- count females
+-- select department, count(id) as females from employee where sex='F' group by department; 
+
+-- count males
+-- select department, count(id) as males from employee where sex='M' group by department;
+
+-- average female salary
+-- select department, sum(salary) as fem_sal from employee where sex='F' group by department;
+
+-- average male salary
+-- select department, sum(salary) as mal_sal from employee where sex='M' group by department;
+
+-- Now put it all together
+with females as
+(select department, count(id) as females from employee where sex='F' group by department),
+female_sal as
+(select department, sum(salary) as fem_sal from employee where sex='F' group by department),
+males as
+(select department, count(id) as males from employee where sex='M' group by department),
+male_sal as
+(select department, sum(salary) as mal_sal from employee where sex='M' group by department)
+select females.department, females.females, female_sal.fem_sal, males.males, male_sal.mal_sal from females inner join males on females.department = males.department inner join female_sal on females.department=female_sal.department inner join male_sal on male_sal.department=females.department;
+
+```
+
+
+## Active Users per Platform
+
+For each platform, calculate the number of users.
+
+```python
+
+import pandas as pd
+
+ans = user_sessions.groupby(by='platform', as_index=True)['user_id'].nunique().reset_index()
+ans
+
+```
+
+```sql
+
+select platform, count(distinct user_id) as n_users from user_sessions group by platform;
+
+```
+
+
+## Frequent Customers
+
+Find customers who appear in the orders table more than 3 times.
+
+```python
+
+import pandas as pd
+
+ans = orders.groupby(by='cust_id')['id'].count().reset_index()
+ans = ans[ans['id']>3]
+ans['cust_id']
+
+```
+
+```sql
+
+select cust_id from orders group by cust_id having count(cust_id)>3;
+
+```
+
+
+## Customers without Orders
+
+Find customers who have never made an order.
+
+```python
+
+import pandas as pd
+
+ordered = orders['cust_id'].unique()
+ordered
+
+ans = customers[~customers['id'].isin(ordered)]['first_name']
+ans
+
+```
+
+```sql
+
+select distinct first_name from customers where id not in (select cust_id from orders);
+
+```
+
+
+## Pending Claims
+
+Count how many claims submitted in December 2021 are still pending. A claim is pending when it has neither an acceptance nor rejection date.
+
+```python
+
+import pandas as pd
+import datetime as dt
+
+ans = cvs_claims[cvs_claims['date_accepted'].isna() & cvs_claims['date_rejected'].isna()]
+ans = ans[ans['date_submitted'].dt.strftime('%Y-%m') == '2021-12']
+
+ans.shape[0]
+
+```
+
+```sql
+
+select count(distinct claim_id) from cvs_claims where to_char(date_submitted, 'YYYY-MM')='2021-12' and date_accepted is NULL and date_rejected is NULL;
+
+```
+
+
+## Number of Records by Variety
+
+Find the total number of records that belong to each variety in the dataset. 
+
+```python
+
+import pandas as pd
+
+ans = iris.groupby(by='variety', as_index=False).count()
+ans = ans[['variety', 'sepal_length']]
+
+```
+
+```sql
+
+select variety, count(variety) from iris group by variety;
+
+```
+
+
+## Company with Most Desktop Only Users
+
+Write a query that returns the company with the highest number of users that use desktop only.
+
+```sql
+
+with cte as
+(select id, user_id, customer_id from fact_events where client_id='desktop' and user_id not in (select user_id from fact_events where client_id<>'desktop'))
+select customer_id from cte group by customer_id;
+```
+
+
+## Unique Users per Client per Month
+
+Write a query that returns the number of unique users per client per month.
+
+```sql
+
+select client_id, to_char(time_id, 'MM') as month, count(distinct user_id) from fact_events group by client_id, month;
+
+```
+
+
+## Most Profitable Companies
+
+Find the three most profitable companies in the world.
+
+```sql
+
+select company, profits from forbes_global_2010_2014 order by profits desc limit 3;
+
+```
+
+
+## Find User Purchases
+
+Write a query that will identify returning active users.
+
+```sql
+
+select distinct(a.user_id) from amazon_transactions as a join amazon_transactions b on a.user_id=b.user_id where a.created_at - b.created_at between 0 and 7 and a.id != b.id;
+
+```
+
+
+## The Most Popular Client_Id among Users using Video and Voice Calls
+
+Select the most popular client_id based on a count of the number of users who have at least 50% of their events from the list: 'video call received', 'video call sent', 'voice call received', 'voice call sent'.
+
+```sql
+
+with list as
+(select user_id, client_id, count(event_type) as event_in_list from fact_events where event_type in ('video call received', 'video call sent', 'voice call received', 'voice call sent') group by (user_id, client_id)),
+total as
+(select user_id, client_id, count(event_type) as event_tot from fact_events group by (user_id, client_id))
+select list.client_id from list inner join total on list.user_id = total.user_id where (event_in_list/total.event_tot)>=0.5 limit 1;
+
+```
+
+
+## Average Salaries
+
+Compare each employee's salary with the average salary of the corresponding department.
+
+```sql
+
+select department, first_name, salary, avg(salary) over (partition by department) from employee;
+
+```
+
+
+## Find the most profitable company in the financial sector
+
+Find the most profitable company in the financial sector. Output the result along with the continent.
+
+```python
+
+import pandas as pd
+
+fin = forbes_global_2010_2014[forbes_global_2010_2014['sector']=='Financials']
+
+prof = fin['profits'].max()
+
+ans = fin[fin['profits']==prof]
+ans[['company', 'continent']]
+
+```
+```sql
+
+select company, continent from forbes_global_2010_2014 where sector='Financials' and profits = (select max(profits) from forbes_global_2010_2014 where sector='Financials');
+
+```
 
 
