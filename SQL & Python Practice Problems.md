@@ -808,3 +808,18 @@ select company, continent from forbes_global_2010_2014 where sector='Financials'
 ```
 
 
+## Book Sales
+
+Calculate the total revenue made per book. Output the book ID and total sales per book. In case there is a book that has never been sold, include it in your output with a value of 0.
+
+```sql
+with cte1 as (
+select books.book_id, unit_price, 
+case when quantity is Null then 0 else quantity end as quantity
+from amazon_books as books 
+left join amazon_books_order_details as orders 
+on books.book_id = orders.book_id)
+select distinct book_id, (unit_price * sum(quantity) over (partition by book_id)) as total_sales from cte1;
+```
+
+
