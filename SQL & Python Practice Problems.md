@@ -823,3 +823,14 @@ select distinct book_id, (unit_price * sum(quantity) over (partition by book_id)
 ```
 
 
+## Duplicate Training Lessons
+
+Display a list of users who took the same training lessons more than once on the same day. Output their usernames, training IDs, dates and the number of times they took the same lesson.
+
+```sql
+
+with cte as (
+select distinct u.u_name, t.training_id, t.training_date, count(t.u_id) over (partition by t.training_date, t.u_id, t.training_id) as count_on_date from training_details as t inner join users_training as u on t.u_id = u.u_id)
+select * from cte where count_on_date > 1;
+
+```
