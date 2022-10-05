@@ -834,3 +834,16 @@ select distinct u.u_name, t.training_id, t.training_date, count(t.u_id) over (pa
 select * from cte where count_on_date > 1;
 
 ```
+
+
+## Top 2 Users with Most Calls
+
+Return the top 2 users in each company that called the most. Output the company_id, user_id, and the user's rank. If there are multiple users in the same rank, keep all of them.
+
+```sql
+
+with cte as (
+select u.company_id, c.user_id, dense_rank() over (partition by u.company_id order by count(c.user_id) desc) as rank from rc_calls as c inner join rc_users as u on u.user_id = c.user_id group by u.company_id, c.user_id)
+select * from cte where rank = 1 or rank = 2;
+
+```
