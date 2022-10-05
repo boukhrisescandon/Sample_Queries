@@ -171,6 +171,17 @@ select distinct abs(cte1.net_time - cte2.net_time) from cte1, cte2;
 
 ```
 
+```sql
+--option 2:
+
+with chris as 
+(select net_time from marathon_male where person_name='Chris Doe'),
+ten as
+(select distinct net_time from (select net_time, dense_rank() over (order by net_time asc) as ranking from marathon_male) a where ranking = 10)
+select abs(chris.net_time - ten.net_time) as diff from chris as chris cross join ten as ten;
+
+```
+
 
 ## Responsible for Most Customers
 
