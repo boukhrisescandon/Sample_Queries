@@ -847,3 +847,16 @@ select u.company_id, c.user_id, dense_rank() over (partition by u.company_id ord
 select * from cte where rank = 1 or rank = 2;
 
 ```
+
+
+## Bottom 2 Companies by Mobile Usage
+
+Write a query that returns a list of the bottom 2 companies by mobile usage. 
+
+```sql
+
+with cte as (
+select customer_id, count(id) as events, dense_rank() over (order by count(id)) from fact_events where client_id='mobile' group by customer_id)
+select customer_id, events from cte where dense_rank in (1, 2);
+
+```
