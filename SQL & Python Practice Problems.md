@@ -871,3 +871,16 @@ select customer_id, count(id) as events, dense_rank() over (order by count(id)) 
 select customer_id, events from cte where dense_rank in (1, 2);
 
 ```
+
+
+## Fastest Hometowns
+
+Find the hometowns with the top 3 average net times. Output the hometowns and their average net time. In case there are ties in net time, return all unique hometowns.
+
+```sql
+
+with cte as
+(select hometown, avg(net_time) as avg_net_time, dense_rank() over (order by avg(net_time)) as ranking from marathon_male group by hometown)
+select hometown, avg_net_time from cte where ranking <= 3;
+
+```
