@@ -884,3 +884,28 @@ with cte as
 select hometown, avg_net_time from cte where ranking <= 3;
 
 ```
+
+
+## Number of shipments per Month
+
+Write a query that will calculate the number of shipments per month. The unique key for one shipment is a combination of shipment_id and sub_id. Output the year_month in format YYYY-MM and the number of shipments in that month.
+
+```sql
+
+select count(distinct concat(shipment_id, sub_id)), to_char(shipment_date, 'YYYY-MM') as year_month from amazon_shipment group by to_char(shipment_date, 'YYYY-MM');
+
+```
+
+
+## Responsible for Most Customers
+
+Each Employee is assigned one territory and is responsible for the Customers from this territory. There may be multiple employees assigned to the same territory.
+Write a query to get the Employees who are responsible for the maximum number of Customers. Output the Employee ID and the number of Customers.
+
+```sql
+
+with cte as
+(select e.empl_id, count(c.cust_id) as n_customers, dense_rank() over (order by count(c.cust_id) desc) as rank from map_employee_territory as e inner join map_customer_territory as c on e.territory_id = c.territory_id group by e.empl_id)
+select empl_id, n_customers from cte where rank=1;
+
+```
