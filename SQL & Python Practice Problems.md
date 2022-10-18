@@ -933,3 +933,26 @@ viewer as
 (select user_id, count(session_id) as view from twitch_sessions where session_type = 'viewer' group by user_id)
 select streamer.user_id, streamer.streaming, viewer.view from streamer inner join viewer on streamer.user_id = viewer.user_id where streamer.streaming > viewer.view limit 10;
 ```
+
+```python
+# Import your libraries
+import pandas as pd
+
+# Start writing code
+twitch_sessions.head()
+
+streamers = twitch_sessions[twitch_sessions['session_type']=='streamer']
+streamers = streamers[['user_id', 'session_id']]
+
+viewers = twitch_sessions[twitch_sessions['session_type']=='viewer']
+viewers = viewers[['user_id', 'session_id']]
+
+cnt_streams = streamers.groupby(by='user_id', as_index=False).count()
+cnt_streams.columns = ['user_id', 'streamers']
+
+cnt_views = viewers.groupby(by='user_id', as_index=False).count()
+cnt_views.columns = ['user_id', 'views']
+
+ans = cnt_streams.merge(cnt_views, on='user_id')
+ans = ans[ans['streamers'] > ans['views']]
+```
