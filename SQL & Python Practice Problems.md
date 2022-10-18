@@ -920,3 +920,16 @@ select (select count(*) from facebook_products where is_low_fat='Y' and is_recyc
 
 --select (count(*) / (select count(*) from facebook_products)::float * 100 )as percentage from facebook_products where is_low_fat='Y' and is_recyclable='Y'
 ```
+
+
+## Top Streamers
+
+List the top 10 users who accumulated the most sessions where they had more streaming sessions than viewing. Return the user_id, number of streaming sessions, and number of viewing sessions.
+
+```sql
+with streamer as
+(select user_id, count(session_id) as streaming from twitch_sessions where session_type='streamer' group by user_id), 
+viewer as 
+(select user_id, count(session_id) as view from twitch_sessions where session_type = 'viewer' group by user_id)
+select streamer.user_id, streamer.streaming, viewer.view from streamer inner join viewer on streamer.user_id = viewer.user_id where streamer.streaming > viewer.view limit 10;
+```
