@@ -909,3 +909,14 @@ with cte as
 select empl_id, n_customers from cte where rank=1;
 
 ```
+
+
+## Low Fat and Recyclable
+
+What percentage of all products are both low fat and recyclable?
+
+```sql
+select (select count(*) from facebook_products where is_low_fat='Y' and is_recyclable='Y') / (select count(*) from facebook_products)::float * 100 as percentage;
+
+--select (count(*) / (select count(*) from facebook_products)::float * 100 )as percentage from facebook_products where is_low_fat='Y' and is_recyclable='Y'
+```
