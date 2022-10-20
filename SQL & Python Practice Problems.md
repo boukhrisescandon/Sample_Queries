@@ -956,3 +956,22 @@ cnt_views.columns = ['user_id', 'views']
 ans = cnt_streams.merge(cnt_views, on='user_id')
 ans = ans[ans['streamers'] > ans['views']]
 ```
+
+
+## Find non-HS SAT Scores
+
+Find SAT scores of students whose high school names do not end with 'HS'.
+
+```sql
+select * from sat_scores where lower(school) not like '%hs%';
+```
+
+```python
+# Import your libraries
+import pandas as pd
+
+# Start writing code
+df = sat_scores
+
+df.loc[~df["school"].str.contains("HS")]
+```
